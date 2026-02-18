@@ -152,44 +152,58 @@ function getNumberType(type: string | undefined): string {
   return types[type || "UNKNOWN"] || "❓ Unknown";
 }
 
-export function lookupPhoneLocation(phoneNumber: string): PhoneLocationResult {
-  try {
-    const parsed = parsePhoneNumber(phoneNumber);
-    if (!parsed) throw new Error("Invalid");
-
-    const countryCode = parsed.country || "US";
-    const timezones = countryTimezones[countryCode] || ["Unknown"];
-    const region = countryRegions[countryCode] || "Unknown Region";
-    const country = countryNames[countryCode] || countryCode;
-
-    return {
-      isValid: parsed.isValid(),
-      formatted: parsed.formatInternational(),
-      country,
-      countryCode,
-      countryFlag: getCountryFlag(countryCode),
-      dialCode: `+${parsed.countryCallingCode}`,
-      numberType: getNumberType(parsed.getType()),
-      region,
-      timezone: timezones,
-      nationalNumber: parsed.nationalNumber,
-      internationalFormat: parsed.formatInternational(),
-      possibleLocations: [country, region],
-    };
-  } catch {
-    return {
-      isValid: false,
-      formatted: "",
-      country: "Unknown",
-      countryCode: "",
-      countryFlag: "🌍",
-      dialCode: "",
-      numberType: "Unknown",
-      region: "Unknown",
-      timezone: [],
-      nationalNumber: "",
-      internationalFormat: "",
-      possibleLocations: [],
-    };
-  }
+function normalizePhoneInput(input: string): string {
+  const trimmed = input.trim();
+  if (trimmed.startsWith("+")) return trimmed;
+  if (trimmed.startsWith("00")) return "+" + trimmed.slice(2);
+  return "+" + trimmed;
 }
+
+export function lookupPhoneLocation(phoneNumber: string): PhoneLocationResult {
+  const attempts = [normalizePhoneInput(phoneNumber), phoneNumber];
+
+  for (const attempt of attempts) {
+    try {
+      const parsed = parsePhoneNumber(attempt);
+      if (!parsed || !parsed.isValid()) continue;
+
+      const countryCode = parsed.country || "US";
+      const timezones = countryTimezones[countryCode] || ["Unknown"];
+      const region = countryRegions[countryCode] || "Unknown Region";
+      const country = countryNames[countryCode] || countryCode;
+
+      return {
+        isValid: true,
+        formatted: parsed.formatInternational(),
+        country,
+        countryCode,
+        countryFlag: getCountryFlag(countryCode),
+        dialCode: `+${parsed.countryCallingCode}`,
+        numberType: getNumberType(parsed.getType()),
+        region,
+        timezone: timezones,
+        nationalNumber: parsed.nationalNumber,
+        internationalFormat: parsed.formatInternational(),
+        possibleLocations: [country, region],
+      };
+    } catch {
+      continue;
+    }
+  }
+
+  return {
+    isValid: false,
+    formatted: "",
+    country: "Unknown",
+    countryCode: "",
+    countryFlag: "🌍",
+    dialCode: "",
+    numberType: "Unknown",
+    region: "Unknown",
+    timezone: [],
+    nationalNumber: "",
+    internationalFormat: "",
+    possibleLocations: [],
+  };
+}
+
