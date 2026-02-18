@@ -1,5 +1,5 @@
 import { useState } from "react";
-import { MapPin, Phone, Globe, Clock, Wifi, Search, X, ChevronRight } from "lucide-react";
+import { MapPin, Phone, Globe, Clock, Wifi, Search, X, Building2, Map } from "lucide-react";
 import { lookupPhoneLocation, type PhoneLocationResult } from "@/lib/phoneUtils";
 import mapBg from "@/assets/map-bg.jpg";
 
@@ -60,7 +60,7 @@ export default function PhoneLocator() {
     if (e.key === "Enter") handleSearch();
   };
 
-  const examples = ["+1 650 555 0123", "+44 20 7946 0000", "+91 98765 43210", "+49 30 12345678"];
+  const examples = ["+91 9653287625", "+1 650 555 0123", "+44 20 7946 0000", "+49 30 12345678"];
 
   return (
     <div className="relative min-h-screen overflow-hidden">
@@ -92,7 +92,7 @@ export default function PhoneLocator() {
             <span className="text-foreground"> Locator</span>
           </h1>
           <p className="mx-auto max-w-md text-muted-foreground">
-            Enter any phone number to instantly discover its country, region, timezone, and more.
+            Enter any phone number to instantly discover its country, state, city, and more.
           </p>
         </div>
 
@@ -107,8 +107,8 @@ export default function PhoneLocator() {
               value={phone}
               onChange={(e) => setPhone(e.target.value)}
               onKeyDown={handleKeyDown}
-              placeholder="+1 234 567 8900"
-              className="flex-1 bg-transparent px-3 py-4 font-mono text-lg text-foreground placeholder:text-muted-foreground/50 focus:outline-none"
+              placeholder="+91 98765 43210 or 91 98765 43210"
+              className="flex-1 bg-transparent px-3 py-4 font-mono text-base text-foreground placeholder:text-muted-foreground/50 focus:outline-none"
             />
             {phone && (
               <button
@@ -187,13 +187,35 @@ export default function PhoneLocator() {
                         <h2 className="mt-1 text-2xl font-bold text-foreground">{result.country}</h2>
                         <p className="text-sm text-muted-foreground">{result.region}</p>
                       </div>
-                      <div className="shrink-0 text-right">
+                      <div className="shrink-0">
                         <span className="inline-flex items-center gap-1 rounded-full bg-primary/10 border border-primary/30 px-3 py-1 text-xs font-semibold text-primary">
                           <span className="h-1.5 w-1.5 rounded-full bg-primary" />
                           Valid
                         </span>
                       </div>
                     </div>
+
+                    {/* City / State highlight box */}
+                    {(result.detectedCity || result.detectedState) && (
+                      <div className="mt-4 rounded-xl border border-primary/40 bg-primary/5 p-4 flex items-center gap-3">
+                        <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-lg bg-primary/15 text-primary">
+                          <MapPin className="h-5 w-5" />
+                        </div>
+                        <div className="flex-1">
+                          <p className="text-xs text-muted-foreground mb-0.5">📍 Detected Location</p>
+                          <p className="text-lg font-bold text-primary">
+                            {[result.detectedCity, result.detectedState].filter(Boolean).join(", ")}
+                          </p>
+                          {result.detectedCircle && (
+                            <p className="text-xs text-muted-foreground mt-0.5">
+                              Telecom Circle: {result.detectedCircle}
+                              {result.detectedOperator ? ` · ${result.detectedOperator}` : ""}
+                            </p>
+                          )}
+                        </div>
+                      </div>
+                    )}
+
                     <div className="mt-4 rounded-xl border border-border bg-secondary/50 p-3">
                       <p className="font-mono text-center text-lg text-primary tracking-widest">
                         {result.internationalFormat}
@@ -204,24 +226,40 @@ export default function PhoneLocator() {
 
                 {/* Detail cards */}
                 <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                  {result.detectedState && (
+                    <InfoCard
+                      icon={<Map className="h-4 w-4" />}
+                      label="State / Province"
+                      value={result.detectedState}
+                      delay={50}
+                    />
+                  )}
+                  {result.detectedCity && (
+                    <InfoCard
+                      icon={<Building2 className="h-4 w-4" />}
+                      label="City / Area"
+                      value={result.detectedCity}
+                      delay={80}
+                    />
+                  )}
                   <InfoCard
                     icon={<Globe className="h-4 w-4" />}
-                    label="Region"
+                    label="World Region"
                     value={result.region}
-                    delay={50}
+                    delay={110}
                   />
                   <InfoCard
                     icon={<Wifi className="h-4 w-4" />}
                     label="Number Type"
                     value={result.numberType}
-                    delay={100}
+                    delay={140}
                   />
                   <InfoCard
                     icon={<Clock className="h-4 w-4" />}
                     label="Primary Timezone"
                     value={result.timezone[0] || "Unknown"}
                     mono
-                    delay={150}
+                    delay={170}
                   />
                   <InfoCard
                     icon={<Phone className="h-4 w-4" />}
@@ -233,7 +271,7 @@ export default function PhoneLocator() {
                   {result.timezone.length > 1 && (
                     <div
                       className="sm:col-span-2 rounded-xl border border-primary/20 bg-card p-4 animate-reveal"
-                      style={{ animationDelay: "250ms" }}
+                      style={{ animationDelay: "230ms" }}
                     >
                       <p className="text-xs text-muted-foreground mb-2 flex items-center gap-1">
                         <Clock className="h-3 w-3" />
@@ -253,9 +291,8 @@ export default function PhoneLocator() {
                   )}
                 </div>
 
-                {/* Disclaimer */}
                 <p className="mt-4 text-center text-xs text-muted-foreground/60">
-                  Location is based on number prefix, not real-time GPS tracking.
+                  📡 Location is based on telecom number allocation (prefix), not real-time GPS.
                 </p>
               </>
             ) : (
@@ -265,11 +302,10 @@ export default function PhoneLocator() {
                 </div>
                 <h3 className="text-lg font-bold text-foreground">Invalid Number</h3>
                 <p className="mt-1 text-sm text-muted-foreground">
-                  Could not recognize "{phone}". Try including the country code (e.g., +1, +44, +91).
+                  Could not recognize "{phone}". Try with country code (e.g., +91, 91, 0091).
                 </p>
                 <div className="mt-4 flex flex-wrap justify-center gap-2">
-                  <span className="text-xs text-muted-foreground">Examples:</span>
-                  {["+1 650 555 0123", "+44 20 7946 0000", "+91 98765 43210"].map((ex) => (
+                  {["+91 9810123456", "+1 650 555 0123", "+44 20 7946 0000"].map((ex) => (
                     <button
                       key={ex}
                       onClick={() => { setPhone(ex); setSearched(false); }}
@@ -288,14 +324,11 @@ export default function PhoneLocator() {
         {!searched && !loading && (
           <div className="mt-16 grid grid-cols-1 sm:grid-cols-3 gap-4 w-full max-w-2xl">
             {[
-              { icon: <Globe className="h-5 w-5" />, title: "Country Detection", desc: "Identify country from any number format" },
+              { icon: <MapPin className="h-5 w-5" />, title: "City & State", desc: "Detect exact city and state from number prefix" },
               { icon: <Clock className="h-5 w-5" />, title: "Timezone Info", desc: "Get local timezone for any region" },
               { icon: <Wifi className="h-5 w-5" />, title: "Number Type", desc: "Detect mobile, landline, VoIP & more" },
             ].map((f, i) => (
-              <div
-                key={i}
-                className="rounded-xl border border-border bg-card/50 p-4 text-center"
-              >
+              <div key={i} className="rounded-xl border border-border bg-card/50 p-4 text-center">
                 <div className="mx-auto mb-2 flex h-10 w-10 items-center justify-center rounded-lg bg-primary/10 text-primary">
                   {f.icon}
                 </div>

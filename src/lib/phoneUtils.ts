@@ -1,4 +1,5 @@
-import { parsePhoneNumber, isValidPhoneNumber, getCountries, getCountryCallingCode, type CountryCode } from "libphonenumber-js";
+import { parsePhoneNumber, type CountryCode } from "libphonenumber-js";
+import { getDetailedLocation } from "./locationData";
 
 export interface PhoneLocationResult {
   isValid: boolean;
@@ -14,6 +15,10 @@ export interface PhoneLocationResult {
   internationalFormat: string;
   possibleLocations: string[];
   carrier?: string;
+  detectedState?: string;
+  detectedCity?: string;
+  detectedCircle?: string;
+  detectedOperator?: string;
 }
 
 const countryTimezones: Record<string, string[]> = {
@@ -171,6 +176,7 @@ export function lookupPhoneLocation(phoneNumber: string): PhoneLocationResult {
       const timezones = countryTimezones[countryCode] || ["Unknown"];
       const region = countryRegions[countryCode] || "Unknown Region";
       const country = countryNames[countryCode] || countryCode;
+      const detailed = getDetailedLocation(parsed.nationalNumber, countryCode);
 
       return {
         isValid: true,
@@ -185,6 +191,10 @@ export function lookupPhoneLocation(phoneNumber: string): PhoneLocationResult {
         nationalNumber: parsed.nationalNumber,
         internationalFormat: parsed.formatInternational(),
         possibleLocations: [country, region],
+        detectedState: detailed.state,
+        detectedCity: detailed.city,
+        detectedCircle: detailed.circle,
+        detectedOperator: detailed.operator,
       };
     } catch {
       continue;
